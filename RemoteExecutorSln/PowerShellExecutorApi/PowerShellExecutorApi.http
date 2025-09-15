@@ -1,0 +1,6 @@
+@PowerShellExecutorApi_HostAddress = http://localhost:5005
+
+GET {{PowerShellExecutorApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

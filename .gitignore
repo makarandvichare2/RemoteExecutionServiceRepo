@@ -1,0 +1,11 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/RemoteExecutorSln/HttpOutBoundApi/bin/Debug/net8.0
+/RemoteExecutorSln/HttpOutBoundApi/obj
+/RemoteExecutorSln/.vs
+/RemoteExecutorSln/PowerShellExecutorApi/bin/Debug/net8.0
+/RemoteExecutorSln/PowerShellExecutorApi/obj
+/RemoteExecutorSln/RemoteExecutorApi/bin/Debug/net8.0
+/RemoteExecutorSln/RemoteExecutorApi/obj

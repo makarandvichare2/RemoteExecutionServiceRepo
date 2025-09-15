@@ -1,0 +1,6 @@
+@RemoteExecutorApi_HostAddress = http://localhost:5100
+
+GET {{RemoteExecutorApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

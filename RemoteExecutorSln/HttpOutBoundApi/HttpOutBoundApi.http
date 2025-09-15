@@ -1,0 +1,6 @@
+@HttpOutBoundApi_HostAddress = http://localhost:5043
+
+GET {{HttpOutBoundApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
