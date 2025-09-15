@@ -1,7 +1,6 @@
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using RemoteExecutorGateWayApi.Commands;
 using RemoteExecutorGateWayApi.Controllers;
+using RemoteExecutorGateWayApi.Services;
 
 namespace RemoteExecutorApi.Controllers;
 
@@ -9,21 +8,18 @@ namespace RemoteExecutorApi.Controllers;
 [Route("api/{**path}")] // The catch-all route
 public class ExecutorController : ControllerBase
 {
-    private readonly IMediator mediator;
-    private readonly ICommandFactory commandFactory;
-    public ExecutorController(IMediator mediator, ICommandFactory commandFactory)
+    private readonly IOrchestratorService service;
+    public ExecutorController(IOrchestratorService service)
     {
-        this.mediator = mediator;
-        this.commandFactory = commandFactory;
+        this.service = service;
     }
 
     [HttpPost(Name = "Run")]
     public async Task<ActionResult> Run([FromBody] ExecutorJsonRequest request)
     {
-        var command = commandFactory.Create(request);
-        var result = await mediator.Send(command);
+        var result = await service.ExecuteAsync(request);
 
-        return Ok(result.Value);
+        return Ok(result);
     }
 }
 

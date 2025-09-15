@@ -61,7 +61,9 @@ namespace RemoteExecutorGateWayApi.Commands
             return new ExecutorRequestPolicy
             {
                 MaxRetries = policy.MaxRetries,
-                TimeoutInSeconds = policy.TimeoutInSeconds,
+                MaxEventBeforeBreak = policy.MaxEventBeforeBreak,
+                DelayTimeoutInSeconds = policy.DelayTimeoutInSeconds,
+                BreakTimeoutInSeconds = policy.BreakTimeoutInSeconds,
             };
         }
 

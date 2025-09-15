@@ -1,25 +1,25 @@
 ﻿using FluentValidation;
-using RemoteExecutorGateWayApi.Commands;
+using RemoteExecutorGateWayApi.ViewModels.Requests;
 
-namespace BikeShop.API.Controllers;
-public class PowershellRequestValidator : AbstractValidator<PowershellRequestCommand>
+namespace RemoteExecutorApi.API.Controllers;
+public class PowershellRequestValidator : AbstractValidator<PowerShellExecutorRequest>
 {
     public PowershellRequestValidator()
     {
-        RuleFor(x => x.CommandRequest.CorrelationId)
+        RuleFor(x => x.CorrelationId)
   .NotNull()
   .WithMessage("CorrelationId is required.");
 
-        RuleFor(x => x.CommandRequest.ExecutionPolicy)
+        RuleFor(x => x.ExecutionPolicy)
           .NotNull()
           .WithMessage("ExecutionPolicy is required.");
 
-        RuleFor(x => x.CommandRequest.ExecutionPolicy.MaxRetries)
+        RuleFor(x => x.ExecutionPolicy.MaxRetries)
           .GreaterThan(0)
           .WithMessage("MaxRetries must be greater than zero.")
           .LessThan(5)
           .WithMessage("MaxRetries must be less than 5.");
-        RuleFor(x => x.CommandRequest.RequestBody)
+        RuleFor(x => x.RequestBody)
          .NotNull()
           .WithMessage("RequestBody is required.");
     }

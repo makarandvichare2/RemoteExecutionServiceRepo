@@ -1,15 +1,11 @@
-﻿using RemoteExecutorGateWayApi.Enums;
-
-namespace RemoteExecutorGateWayApi.ViewModels.Requests;
+﻿namespace RemoteExecutorGateWayApi.ViewModels.Requests;
 
 public class ExecutorRequest
 {
     public Guid CorrelationId { get; private set; }
-    //public ExecutionTypeEnum ExecutionType { get; private set; }
     public ExecutorRequest(ExecutorRequestPolicy? executionPolicy)
     {
         CorrelationId = Guid.NewGuid();
-        //ExecutionType = executionType;
         ExecutionPolicy = executionPolicy ?? defaultPolicy();
     }
 
@@ -20,7 +16,9 @@ public class ExecutorRequest
         return new ExecutorRequestPolicy
         {
             MaxRetries = 3,
-            TimeoutInSeconds = 15,
+            BreakTimeoutInSeconds = 15,
+            MaxEventBeforeBreak = 5,
+            DelayTimeoutInSeconds = 7,
         };
     }
 

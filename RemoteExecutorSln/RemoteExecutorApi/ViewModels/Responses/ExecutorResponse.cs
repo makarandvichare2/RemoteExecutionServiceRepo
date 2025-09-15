@@ -2,13 +2,13 @@
 
 public class ExecutorResponse
 {
-    ExecutorResponse(
+    public ExecutorResponse(
         Guid correlationId,
         string status,
         DateTime startTimeUtc,
         DateTime endTimeUtc,
         AttemptSummary attemptSummary,
-        string results)
+        dynamic results)
     {
         CorrelationId = correlationId;
         Status = status;
@@ -23,6 +23,6 @@ public class ExecutorResponse
     public DateTime StartTimeUtc { get; private set; }
     public DateTime EndTimeUtc { get; private set; }
     public AttemptSummary AttemptSummary { get; private set; }
-    public string Results { get; private set; }
+    public dynamic Results { get; private set; }
 
 }

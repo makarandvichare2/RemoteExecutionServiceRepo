@@ -1,6 +1,4 @@
-﻿using RemoteExecutorGateWayApi.Enums;
-
-namespace RemoteExecutorGateWayApi.ViewModels.Requests;
+﻿namespace RemoteExecutorGateWayApi.ViewModels.Requests;
 
 public class PowerShellExecutorRequest : ExecutorRequest
 {

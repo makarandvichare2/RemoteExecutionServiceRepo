@@ -1,5 +1,4 @@
-﻿using RemoteExecutorGateWayApi.Controllers;
-using RemoteExecutorGateWayApi.ViewModels.Requests;
+﻿using RemoteExecutorGateWayApi.ViewModels.Requests;
 using RemoteExecutorGateWayApi.ViewModels.Responses;
 
 namespace RemoteExecutorGateWayApi.Services
@@ -13,7 +12,7 @@ namespace RemoteExecutorGateWayApi.Services
                 throw new ArgumentNullException(nameof(request));
             }
 
-
+            return null;
         }
     }
 }

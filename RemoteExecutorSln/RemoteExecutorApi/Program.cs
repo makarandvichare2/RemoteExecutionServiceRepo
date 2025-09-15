@@ -1,11 +1,9 @@
-
-using Ardalis.ListStartupServices;
-using Ardalis.SharedKernel;
-using BikeShop.API.Controllers;
+using RemoteExecutorApi.API.Controllers;
+using RemoteExecutorApi.API.Validators;
 using FluentValidation;
-using MediatR;
-using RemoteExecutorGateWayApi.Commands;
-using System.Reflection;
+using RemoteExecutorGateWayApi.Services;
+using RemoteExecutorGateWayApi.ViewModels.Requests;
+using RemoteExecutorGateWayApi.Controllers;
 
 namespace RemoteExecutorApi
 {
@@ -24,9 +22,8 @@ namespace RemoteExecutorApi
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-
-            ConfigureMediatR(builder);
-            builder.Services.AddInfrastructureServices(builder.Configuration);
+            builder.Services.AddHealthChecks();
+            ConfigureDependencies(builder);
 
             var app = builder.Build();
 
@@ -40,27 +37,22 @@ namespace RemoteExecutorApi
                 app.UseSwagger();
                 app.UseSwaggerUI();
                 app.UseDeveloperExceptionPage();
-                app.UseShowAllServicesMiddleware();
             }
 
             app.UseAuthorization();
             app.MapControllers();
+            app.MapHealthChecks("/ping");
             app.Run();
         }
 
-        static void ConfigureMediatR(WebApplicationBuilder builder)
+        static void ConfigureDependencies(WebApplicationBuilder builder)
         {
-            var mediatRAssemblies = new[]
-            {
-                Assembly.GetAssembly(typeof(PowershellRequestCommand)), // UseCases
-                Assembly.GetAssembly(typeof(HttpRequestCommand)), // UseCases
-            };
-            builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(mediatRAssemblies!));
-            builder.Services.AddValidatorsFromAssembly(Assembly.GetAssembly(typeof(HttpRequestValidator)));
-            builder.Services.AddValidatorsFromAssembly(Assembly.GetAssembly(typeof(PowershellRequestValidator)));
-            builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-            builder.Services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
-            builder.Services.AddScoped(typeof(ICommandFactory), typeof(CommandFactory));
+            builder.Services.AddScoped(typeof(AbstractValidator<HttpExecutorRequest>), typeof(HttpRequestValidator));
+            builder.Services.AddScoped(typeof(AbstractValidator<PowerShellExecutorRequest>), typeof(PowershellRequestValidator));
+            builder.Services.AddScoped(typeof(AbstractValidator<ExecutorJsonRequest>), typeof(ExecutorJsonRequestValidator));
+            builder.Services.AddScoped(typeof(IOrchestratorService), typeof(OrchestratorService));
+            builder.Services.AddScoped(typeof(IHttpExecutorService), typeof(HttpExecutorService));
+            builder.Services.AddScoped(typeof(IPowershellExecutorService), typeof(PowershellExecutorService));
         }
     }
 }

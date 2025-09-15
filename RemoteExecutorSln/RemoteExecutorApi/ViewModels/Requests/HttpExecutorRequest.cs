@@ -1,6 +1,4 @@
-﻿using RemoteExecutorGateWayApi.Enums;
-
-namespace RemoteExecutorGateWayApi.ViewModels.Requests;
+﻿namespace RemoteExecutorGateWayApi.ViewModels.Requests;
 
 public class HttpExecutorRequest : ExecutorRequest
 {
@@ -8,6 +6,12 @@ public class HttpExecutorRequest : ExecutorRequest
     public HttpExecutorRequest(HttpRequestBody body,
                                ExecutorRequestPolicy? executionPolicy) : base(executionPolicy)
     {
+        //remove unwanted filters
+        body.Headers.Remove("Authorization");
+        body.Headers.Remove("Connection");
+        body.Headers.Remove("Keep-Alive");
+        body.Headers.Remove("Cookie");
+        body.Headers.Remove("Referer");
         RequestBody = body;
     }
 }

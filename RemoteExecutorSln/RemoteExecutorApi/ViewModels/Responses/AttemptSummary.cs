@@ -2,6 +2,10 @@
 
 public class AttemptSummary
 {
-    public int AttemptCount { get; private set; }
-    public Attempt Attempts { get; private set; }
+    public AttemptSummary()
+    {
+        Attempts = new List<Attempt>();
+    }
+    public int AttemptCount { get; set; }
+    public List<Attempt> Attempts { get; set; }
 }

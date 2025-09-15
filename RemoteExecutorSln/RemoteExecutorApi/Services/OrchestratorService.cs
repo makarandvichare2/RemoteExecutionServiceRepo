@@ -1,4 +1,5 @@
-﻿using RemoteExecutorGateWayApi.Commands;
+﻿using FluentValidation;
+using FluentValidation.Results;
 using RemoteExecutorGateWayApi.Controllers;
 using RemoteExecutorGateWayApi.Enums;
 using RemoteExecutorGateWayApi.ViewModels.Requests;
@@ -6,26 +7,34 @@ using RemoteExecutorGateWayApi.ViewModels.Responses;
 using System.Text.Json;
 namespace RemoteExecutorGateWayApi.Services
 {
-    public class OrchestratorService
+    public class OrchestratorService : IOrchestratorService
     {
         private readonly IHttpExecutorService httpExecutorService;
         private readonly IPowershellExecutorService powershellExecutorService;
-
+        private readonly AbstractValidator<ExecutorJsonRequest> validator;
         private readonly JsonSerializerOptions options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
         };
         public OrchestratorService(
             IHttpExecutorService httpExecutorService,
-            IPowershellExecutorService powershellExecutorService) {
-             this.httpExecutorService = httpExecutorService;
-             this.powershellExecutorService = powershellExecutorService;
+            IPowershellExecutorService powershellExecutorService,
+            AbstractValidator<ExecutorJsonRequest> validator)
+        {
+            this.httpExecutorService = httpExecutorService;
+            this.powershellExecutorService = powershellExecutorService;
+            this.validator = validator;
         }
         public async Task<ExecutorResponse> ExecuteAsync(ExecutorJsonRequest executorJson)
         {
-            // The ExecutionRequest object is already populated by the controller's model binding
-
             if (executorJson == null) throw new ArgumentNullException(nameof(executorJson));
+
+            ValidationResult result = await validator.ValidateAsync(executorJson);
+
+            if (!result.IsValid)
+            {
+                throw new ValidationException(result.Errors);
+            }
 
             if (executorJson.ExecutorType == (int)ExecutionTypeEnum.Http)
             {
@@ -33,8 +42,7 @@ namespace RemoteExecutorGateWayApi.Services
                     CreateHttpRequestBody(executorJson.RequestBody),
                     CreatePolicy(executorJson.Policy)));
             }
-
-            if (executorJson.ExecutorType == (int)ExecutionTypeEnum.PowerShell)
+            else if (executorJson.ExecutorType == (int)ExecutionTypeEnum.PowerShell)
             {
                 return await powershellExecutorService.ExecuteAsync(new PowerShellExecutorRequest(
                     CreatePowershellRequestBody(executorJson.RequestBody),
@@ -42,7 +50,6 @@ namespace RemoteExecutorGateWayApi.Services
             }
 
             return null;
-
         }
 
         private HttpRequestBody CreateHttpRequestBody(JsonElement requestBody)
@@ -61,7 +68,9 @@ namespace RemoteExecutorGateWayApi.Services
             return new ExecutorRequestPolicy
             {
                 MaxRetries = policy.MaxRetries,
-                TimeoutInSeconds = policy.TimeoutInSeconds,
+                MaxEventBeforeBreak = policy.MaxEventBeforeBreak,
+                BreakTimeoutInSeconds = policy.BreakTimeoutInSeconds,
+                DelayTimeoutInSeconds = policy.DelayTimeoutInSeconds,
             };
         }
 
