@@ -6,6 +6,7 @@ using Polly.Extensions.Http;
 using RemoteExecutorGateWayApi.ViewModels.Requests;
 using RemoteExecutorGateWayApi.ViewModels.Responses;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 
@@ -13,9 +14,11 @@ namespace RemoteExecutorGateWayApi.Services
 {
     public class HttpExecutorService : IHttpExecutorService
     {
-        private readonly AbstractValidator<HttpExecutorRequest> validator;
-        public HttpExecutorService(AbstractValidator<HttpExecutorRequest> validator) { 
+        private readonly IValidator<HttpExecutorRequest> validator;
+        private readonly IHttpClientFactory httpClientFactory;
+        public HttpExecutorService(IValidator<HttpExecutorRequest> validator, IHttpClientFactory httpClientFactory) { 
             this.validator = validator;
+            this.httpClientFactory = httpClientFactory;
         }
 
         public async Task<ExecutorResponse> ExecuteAsync(HttpExecutorRequest request)
@@ -52,7 +55,8 @@ namespace RemoteExecutorGateWayApi.Services
             {
                 return CreateExecutorResponse(request, new { errorMessage = ex.Message }, "failed", attemptSummary);
             }
-            return CreateExecutorResponse(request, JsonSerializer.Deserialize<dynamic>(responseBody),"status", attemptSummary);
+            var formatedResult = !string.IsNullOrEmpty(responseBody) ?JsonSerializer.Deserialize<dynamic>(responseBody) : string.Empty;
+            return CreateExecutorResponse(request, formatedResult, status, attemptSummary);
         }
 
         private static ExecutorResponse CreateExecutorResponse(HttpExecutorRequest request,dynamic result,string status, AttemptSummary attemptSummary)
@@ -68,7 +72,6 @@ namespace RemoteExecutorGateWayApi.Services
 
         private async Task<(string responseBody, string status)> ExecuteRequestWithRetryAndCircuitBreak(HttpExecutorRequest request, Context context)
         {
-
             var summary = context["AttemptSummary"] as AttemptSummary;
             var currentAttempt = new Attempt { AttemptNumber = summary.Attempts.Count + 1, StartTimeUtc = DateTime.UtcNow };
             summary.Attempts.Add(currentAttempt);
@@ -76,7 +79,6 @@ namespace RemoteExecutorGateWayApi.Services
             var resiliencePolicy = SetResiliencePolicy(request, context);
             var executorResult = await resiliencePolicy.ExecuteAsync(async () =>
             {
-                using var httpClient = new HttpClient();
                 StringContent content = null;
                 string url = request.RequestBody.Url;
                 if (CheckBodyExists(request.RequestBody.Body))
@@ -91,10 +93,17 @@ namespace RemoteExecutorGateWayApi.Services
 
                 try
                 {
+                    var httpClient = httpClientFactory.CreateClient();
                     var result = await httpClient.PostAsync(url, content);
                     return result;
                 }
-                catch(Exception ex) 
+                catch (BrokenCircuitException ex)
+                {
+                    currentAttempt.Status = "failure";
+                    currentAttempt.ErrorMessage = ex.Message;
+                    throw;
+                }
+                catch (Exception ex) 
                 {
                     currentAttempt.Status = "failure";
                     currentAttempt.ErrorMessage = ex.Message;
@@ -135,7 +144,7 @@ namespace RemoteExecutorGateWayApi.Services
                     onRetry: (httpResponse, timespan, retryAttempt, policyContext) =>
                     {
                         var summary = context["AttemptSummary"] as AttemptSummary;
-                        var attempt = new Attempt { AttemptNumber = retryAttempt + 1, Status = "transient_failure", StartTimeUtc = DateTime.UtcNow,ErrorMessage = httpResponse.Exception.Message };
+                        var attempt = new Attempt { AttemptNumber = retryAttempt + 1, Status = "transient_failure", StartTimeUtc = DateTime.UtcNow,ErrorMessage = httpResponse?.Exception?.Message };
                         summary?.Attempts.Add(attempt);
                     });
 

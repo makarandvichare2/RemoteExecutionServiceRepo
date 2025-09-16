@@ -4,6 +4,7 @@ using FluentValidation;
 using RemoteExecutorGateWayApi.Services;
 using RemoteExecutorGateWayApi.ViewModels.Requests;
 using RemoteExecutorGateWayApi.Controllers;
+using System.Reflection;
 
 namespace RemoteExecutorApi
 {
@@ -23,6 +24,7 @@ namespace RemoteExecutorApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddHealthChecks();
+            builder.Services.AddHttpClient();
             ConfigureDependencies(builder);
 
             var app = builder.Build();
@@ -47,9 +49,10 @@ namespace RemoteExecutorApi
 
         static void ConfigureDependencies(WebApplicationBuilder builder)
         {
-            builder.Services.AddScoped(typeof(AbstractValidator<HttpExecutorRequest>), typeof(HttpRequestValidator));
-            builder.Services.AddScoped(typeof(AbstractValidator<PowerShellExecutorRequest>), typeof(PowershellRequestValidator));
-            builder.Services.AddScoped(typeof(AbstractValidator<ExecutorJsonRequest>), typeof(ExecutorJsonRequestValidator));
+            builder.Services.AddValidatorsFromAssembly(Assembly.GetAssembly(typeof(HttpRequestValidator)));
+            builder.Services.AddValidatorsFromAssembly(Assembly.GetAssembly(typeof(PowershellRequestValidator)));
+            builder.Services.AddValidatorsFromAssembly(Assembly.GetAssembly(typeof(ExecutorJsonRequestValidator)));
+
             builder.Services.AddScoped(typeof(IOrchestratorService), typeof(OrchestratorService));
             builder.Services.AddScoped(typeof(IHttpExecutorService), typeof(HttpExecutorService));
             builder.Services.AddScoped(typeof(IPowershellExecutorService), typeof(PowershellExecutorService));

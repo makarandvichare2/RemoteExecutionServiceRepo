@@ -9,3 +9,5 @@
 /RemoteExecutorSln/PowerShellExecutorApi/obj
 /RemoteExecutorSln/RemoteExecutorApi/bin/Debug/net8.0
 /RemoteExecutorSln/RemoteExecutorApi/obj
+/RemoteExecutorSln/Api.UnitTests/bin/Debug/net8.0
+/RemoteExecutorSln/Api.UnitTests/obj

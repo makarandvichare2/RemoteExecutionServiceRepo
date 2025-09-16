@@ -11,7 +11,7 @@ namespace RemoteExecutorGateWayApi.Services
     {
         private readonly IHttpExecutorService httpExecutorService;
         private readonly IPowershellExecutorService powershellExecutorService;
-        private readonly AbstractValidator<ExecutorJsonRequest> validator;
+        private readonly IValidator<ExecutorJsonRequest> validator;
         private readonly JsonSerializerOptions options = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -19,7 +19,7 @@ namespace RemoteExecutorGateWayApi.Services
         public OrchestratorService(
             IHttpExecutorService httpExecutorService,
             IPowershellExecutorService powershellExecutorService,
-            AbstractValidator<ExecutorJsonRequest> validator)
+            IValidator<ExecutorJsonRequest> validator)
         {
             this.httpExecutorService = httpExecutorService;
             this.powershellExecutorService = powershellExecutorService;

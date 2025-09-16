@@ -7,11 +7,14 @@ public class HttpExecutorRequest : ExecutorRequest
                                ExecutorRequestPolicy? executionPolicy) : base(executionPolicy)
     {
         //remove unwanted filters
-        body.Headers.Remove("Authorization");
-        body.Headers.Remove("Connection");
-        body.Headers.Remove("Keep-Alive");
-        body.Headers.Remove("Cookie");
-        body.Headers.Remove("Referer");
+        if (body.Headers != null && body.Headers.Count > 0)
+        {
+            body.Headers.Remove("Authorization");
+            body.Headers.Remove("Connection");
+            body.Headers.Remove("Keep-Alive");
+            body.Headers.Remove("Cookie");
+            body.Headers.Remove("Referer");
+        }
         RequestBody = body;
     }
 }

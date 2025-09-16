@@ -25,6 +25,10 @@ public class HttpRequestValidator : AbstractValidator<HttpExecutorRequest>
          .NotNull()
           .WithMessage("RequestBody is required.");
 
+        RuleFor(x => x.RequestBody.Url)
+         .NotNull()
+          .WithMessage("Url is required.");
+
         RuleFor(x => x.ExecutionPolicy.MaxEventBeforeBreak)
           .GreaterThan(0)
           .WithMessage("MaxEventBeforeBreak must be greater than zero.")

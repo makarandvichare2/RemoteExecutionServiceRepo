@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RemoteExecutorGateWayApi", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpOutBoundApi", "HttpOutBoundApi\HttpOutBoundApi.csproj", "{93F751C2-689B-46D9-9E93-1784231D2E75}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoteExecutorGateWayApi.UnitTests", "Api.UnitTests\RemoteExecutorGateWayApi.UnitTests.csproj", "{1B54FBEA-DD18-41CB-8884-903D2D06197C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{93F751C2-689B-46D9-9E93-1784231D2E75}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{93F751C2-689B-46D9-9E93-1784231D2E75}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{93F751C2-689B-46D9-9E93-1784231D2E75}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B54FBEA-DD18-41CB-8884-903D2D06197C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B54FBEA-DD18-41CB-8884-903D2D06197C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B54FBEA-DD18-41CB-8884-903D2D06197C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B54FBEA-DD18-41CB-8884-903D2D06197C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
