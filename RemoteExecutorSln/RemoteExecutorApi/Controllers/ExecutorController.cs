@@ -14,8 +14,8 @@ public class ExecutorController : ControllerBase
         this.service = service;
     }
 
-    [HttpPost(Name = "Run")]
-    public async Task<ActionResult> Run([FromBody] ExecutorJsonRequest request)
+    [HttpPost(Name = "RunAsync")]
+    public async Task<ActionResult> RunAsync([FromBody] ExecutorJsonRequest request)
     {
         var result = await service.ExecuteAsync(request);
 
