@@ -2,16 +2,10 @@ using FluentAssertions;
 using FluentValidation;
 using FluentValidation.Results;
 using NSubstitute;
-using RemoteExecutorApi.API.Validators;
-using RemoteExecutorGateWayApi.Controllers;
-using RemoteExecutorGateWayApi.Enums;
 using RemoteExecutorGateWayApi.Services;
 using RemoteExecutorGateWayApi.UnitTests.Helpers;
 using RemoteExecutorGateWayApi.ViewModels.Requests;
-using RemoteExecutorGateWayApi.ViewModels.Responses;
-
 using System.Net;
-using System.Net.Http;
 using System.Text.Json;
 
 namespace RemoteExecutorGateWayApi.UnitTests.Services
@@ -126,7 +120,6 @@ namespace RemoteExecutorGateWayApi.UnitTests.Services
             validator.ValidateAsync(request).Returns(new ValidationResult());
             mockHttpHandler.ResponseQueue.Enqueue(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
             mockHttpHandler.ResponseQueue.Enqueue(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)); // This will break the circuit
-            mockHttpHandler.ResponseQueue.Enqueue(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)); // This request should fail immediately
 
             // Act
             var response = await service.ExecuteAsync(request);
@@ -136,7 +129,6 @@ namespace RemoteExecutorGateWayApi.UnitTests.Services
             ((JsonElement)response.Result).GetProperty("errorMessage").GetString().Should().Contain("Circuit breaker is open");
             mockHttpHandler.CallCount.Should().Be(2);
         }
-
 
         private HttpExecutorRequest CreateRequest(int maxRetries =3, int maxEventsBeforeBreak =3)
         {
@@ -152,6 +144,5 @@ namespace RemoteExecutorGateWayApi.UnitTests.Services
             };
             return new HttpExecutorRequest(body, policy);
         }
-
     }
 }

@@ -6,7 +6,6 @@ using Polly.Extensions.Http;
 using RemoteExecutorGateWayApi.ViewModels.Requests;
 using RemoteExecutorGateWayApi.ViewModels.Responses;
 using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 
@@ -76,8 +75,7 @@ namespace RemoteExecutorGateWayApi.Services
             var currentAttempt = new Attempt { AttemptNumber = summary.Attempts.Count + 1, StartTimeUtc = DateTime.UtcNow };
             summary.Attempts.Add(currentAttempt);
 
-            var resiliencePolicy = SetResiliencePolicy(request, context);
-            var executorResult = await resiliencePolicy.ExecuteAsync(async () =>
+            var executorResult = await SetResiliencePolicy(request, context).ExecuteAsync(async () =>
             {
                 StringContent content = null;
                 string url = request.RequestBody.Url;
@@ -95,6 +93,7 @@ namespace RemoteExecutorGateWayApi.Services
                 {
                     var httpClient = httpClientFactory.CreateClient();
                     var result = await httpClient.PostAsync(url, content);
+                    result.EnsureSuccessStatusCode();
                     return result;
                 }
                 catch (BrokenCircuitException ex)
