@@ -17,9 +17,9 @@ namespace RemoteExecutorGateWayApi.Services
         public HttpExecutorService(AbstractValidator<HttpExecutorRequest> validator) { 
             this.validator = validator;
         }
+
         public async Task<ExecutorResponse> ExecuteAsync(HttpExecutorRequest request)
         {
-            DateTime startTimeUtc = DateTime.Now.ToUniversalTime();
             if (request == null)
             {
                 throw new ArgumentNullException(nameof(request));
@@ -35,24 +35,45 @@ namespace RemoteExecutorGateWayApi.Services
             string responseBody = string.Empty;
             string status = string.Empty;
             var attemptSummary = new AttemptSummary();
+            var context = new Context { ["AttemptSummary"] = attemptSummary };
             try
             {
-              (responseBody, status) = await ExecuteRequestWithRetryAndCircuitBreak(request);
+                (responseBody, status) = await ExecuteRequestWithRetryAndCircuitBreak(request, context);
             }
             catch (BrokenCircuitException ex)
             {
-                attemptSummary.Attempts.Add(new Attempt(attemptSummary.Attempts.Count + 1, "boken_circuit_failure", startTimeUtc, DateTime.Now.ToUniversalTime()));
+                return CreateExecutorResponse(
+                    request,
+                    new { errorMessage = "Circuit breaker is open. Please try again later." },
+                    "failed",
+                    attemptSummary);
             }
             catch (Exception ex)
             {
-                attemptSummary.Attempts.Add(new Attempt(attemptSummary.Attempts.Count + 1, "permanent_failure", startTimeUtc, DateTime.Now.ToUniversalTime()));
+                return CreateExecutorResponse(request, new { errorMessage = ex.Message }, "failed", attemptSummary);
             }
-            return GetExecutorResponse(request, startTimeUtc, responseBody, status, attemptSummary);
+            return CreateExecutorResponse(request, JsonSerializer.Deserialize<dynamic>(responseBody),"status", attemptSummary);
         }
 
-        private async Task<(string responseBody, string status)> ExecuteRequestWithRetryAndCircuitBreak(HttpExecutorRequest request)
+        private static ExecutorResponse CreateExecutorResponse(HttpExecutorRequest request,dynamic result,string status, AttemptSummary attemptSummary)
         {
-            var resiliencePolicy = SetResiliencePolicy(request);
+            return new ExecutorResponse
+            {
+                CorrelationId = request.CorrelationId,
+                Status = status,
+                Result = result,
+                AttemptSummary = attemptSummary
+            };
+        }
+
+        private async Task<(string responseBody, string status)> ExecuteRequestWithRetryAndCircuitBreak(HttpExecutorRequest request, Context context)
+        {
+
+            var summary = context["AttemptSummary"] as AttemptSummary;
+            var currentAttempt = new Attempt { AttemptNumber = summary.Attempts.Count + 1, StartTimeUtc = DateTime.UtcNow };
+            summary.Attempts.Add(currentAttempt);
+
+            var resiliencePolicy = SetResiliencePolicy(request, context);
             var executorResult = await resiliencePolicy.ExecuteAsync(async () =>
             {
                 using var httpClient = new HttpClient();
@@ -68,8 +89,21 @@ namespace RemoteExecutorGateWayApi.Services
                     url = url + GetQueryString(request.RequestBody.QueryParams);
                 }
 
-                var result = await httpClient.PostAsync(url, content);
-                return result;
+                try
+                {
+                    var result = await httpClient.PostAsync(url, content);
+                    return result;
+                }
+                catch(Exception ex) 
+                {
+                    currentAttempt.Status = "failure";
+                    currentAttempt.ErrorMessage = ex.Message;
+                    throw; 
+                }
+                finally
+                {
+                    currentAttempt.EndTimeUtc = DateTime.UtcNow;
+                }
             });
 
             executorResult.EnsureSuccessStatusCode();
@@ -77,15 +111,6 @@ namespace RemoteExecutorGateWayApi.Services
             var responseBody = await executorResult.Content.ReadAsStringAsync();
 
             return (responseBody, status);
-        }
-
-        private ExecutorResponse GetExecutorResponse(HttpExecutorRequest request, DateTime startTimeUtc, string responseBody, string status, AttemptSummary attemptSummary)
-        {
-            DateTime endTimeUtc = System.DateTime.Now.ToUniversalTime();
-            attemptSummary.AttemptCount = 1;
-            attemptSummary.Attempts.Add(new Attempt(1, status, startTimeUtc, endTimeUtc));
-            var results = JsonSerializer.Deserialize<dynamic>(responseBody);
-            return new ExecutorResponse(request.CorrelationId, status, startTimeUtc, endTimeUtc, attemptSummary, results);
         }
 
         private bool CheckBodyExists(JsonElement body)
@@ -101,24 +126,26 @@ namespace RemoteExecutorGateWayApi.Services
             return true;
         }
 
-        private Polly.Wrap.AsyncPolicyWrap<HttpResponseMessage> SetResiliencePolicy(HttpExecutorRequest request)
+        private Polly.Wrap.AsyncPolicyWrap<HttpResponseMessage> SetResiliencePolicy(HttpExecutorRequest request, Context context)
         {
-            AsyncPolicy<HttpResponseMessage> retryPolicy = HttpPolicyExtensions
-            .HandleTransientHttpError()
-            .OrResult(r => r.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-            .WaitAndRetryAsync(request.ExecutionPolicy.MaxRetries, retryAttempt =>
-                TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + TimeSpan.FromSeconds(new Random().Next(0, request.ExecutionPolicy.DelayTimeoutInSeconds))
-            );
-
-
-            AsyncPolicy<HttpResponseMessage> circuitBreakerPolicy = HttpPolicyExtensions
+            var retryPolicy = HttpPolicyExtensions
                 .HandleTransientHttpError()
-                .CircuitBreakerAsync(
-                    handledEventsAllowedBeforeBreaking: request.ExecutionPolicy.BreakTimeoutInSeconds,
-                    durationOfBreak: TimeSpan.FromSeconds(request.ExecutionPolicy.BreakTimeoutInSeconds)
+                .WaitAndRetryAsync(request.ExecutionPolicy.MaxRetries, retryAttempt =>
+                    TimeSpan.FromMilliseconds(request.ExecutionPolicy.DelayTimeoutInMiliSeconds * Math.Pow(2, retryAttempt)),
+                    onRetry: (httpResponse, timespan, retryAttempt, policyContext) =>
+                    {
+                        var summary = context["AttemptSummary"] as AttemptSummary;
+                        var attempt = new Attempt { AttemptNumber = retryAttempt + 1, Status = "transient_failure", StartTimeUtc = DateTime.UtcNow,ErrorMessage = httpResponse.Exception.Message };
+                        summary?.Attempts.Add(attempt);
+                    });
+
+            var circuitBreakerPolicy = HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .CircuitBreakerAsync(request.ExecutionPolicy.MaxEventBeforeBreak,
+                TimeSpan.FromSeconds(request.ExecutionPolicy.BreakTimeoutInSeconds)
                 );
 
-          return Policy.WrapAsync(circuitBreakerPolicy, retryPolicy);
+            return Policy.WrapAsync(circuitBreakerPolicy, retryPolicy);
         }
 
         private string GetQueryString(Dictionary<string, string> queryParams)
@@ -129,7 +156,7 @@ namespace RemoteExecutorGateWayApi.Services
             }
 
             var encodedPairs = queryParams.Select(pair => $"{WebUtility.UrlEncode(pair.Key)}={WebUtility.UrlEncode(pair.Value)}");
-            return string.Join("&", encodedPairs);
+            return "?" + string.Join("&", encodedPairs);
         }
     }
 }

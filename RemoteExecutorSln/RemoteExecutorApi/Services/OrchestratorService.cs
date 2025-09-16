@@ -70,7 +70,7 @@ namespace RemoteExecutorGateWayApi.Services
                 MaxRetries = policy.MaxRetries,
                 MaxEventBeforeBreak = policy.MaxEventBeforeBreak,
                 BreakTimeoutInSeconds = policy.BreakTimeoutInSeconds,
-                DelayTimeoutInSeconds = policy.DelayTimeoutInSeconds,
+                DelayTimeoutInMiliSeconds = policy.DelayTimeoutInMiliSeconds,
             };
         }
 

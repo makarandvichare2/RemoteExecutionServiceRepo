@@ -18,7 +18,7 @@ public class ExecutorRequest
             MaxRetries = 3,
             BreakTimeoutInSeconds = 15,
             MaxEventBeforeBreak = 5,
-            DelayTimeoutInSeconds = 7,
+            DelayTimeoutInMiliSeconds = 7,
         };
     }
 

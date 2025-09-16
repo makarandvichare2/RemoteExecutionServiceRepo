@@ -31,11 +31,11 @@ public class HttpRequestValidator : AbstractValidator<HttpExecutorRequest>
           .LessThan(15)
           .WithMessage("MaxEventBeforeBreak must be less than 15.");
 
-        RuleFor(x => x.ExecutionPolicy.DelayTimeoutInSeconds)
+        RuleFor(x => x.ExecutionPolicy.DelayTimeoutInMiliSeconds)
           .GreaterThan(0)
-          .WithMessage("DelayTimeoutInSeconds must be greater than zero.")
-          .LessThan(20)
-          .WithMessage("DelayTimeoutInSeconds must be less than 20.");
+          .WithMessage("DelayTimeoutInMiliSeconds must be greater than zero.")
+          .LessThan(3000)
+          .WithMessage("DelayTimeoutInMiliSeconds must be less than 20.");
 
         RuleFor(x => x.ExecutionPolicy.BreakTimeoutInSeconds)
           .GreaterThan(0)
